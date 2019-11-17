@@ -17,9 +17,9 @@ This is a project to parse cmake scripts, it will parse script into a list of co
      Parse cmake script file, return a list of command invocation.
 
 ## Example
-
- (defn common-usage []
-   (let [bindings (atom {})
+```
+(defn common-usage []
+  (let [bindings (atom {})
         invocations (parse-string "# A demo helloworld
                                    SET(TARGET_NAME \"HelloWorld\")
                                    ADD_EXECUTABLE(${TARGET_NAME} hello.cpp world.cpp)")]
@@ -30,7 +30,7 @@ This is a project to parse cmake scripts, it will parse script into a list of co
         (reset! bindings (assoc @bindings (second invocation) (nth invocation 2))
         (.equalsIgnoreCase "ADD_EXECUTABLE" (first invocation))
         (println "bin:" (expand-argument (second invocation) bindings)))))))
-
+```
 This will output: 
 
     - SET TARGET_NAME "HelloWorld"
