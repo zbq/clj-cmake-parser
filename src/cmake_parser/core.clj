@@ -33,27 +33,26 @@
         parser (CMakeParser. tokens)
         tree (.file parser)
         walker (ParseTreeWalker.)
-        invocations (transient [])
-        args (atom 0)
-        args-stack (atom 0)
+        invocations (atom [])
+        args (atom nil) ;; [command arg1 arg2 ...]
+        args-stack (atom nil)
         analyser (proxy [CMakeBaseListener] []
                    (enterCommand_invocation [ctx]
-                     (reset! args (transient [(-> ctx (.Identifier) (.getText))]))
-                     (reset! args-stack (transient [])))
+                     (reset! args [(-> ctx (.Identifier) (.getText))]) ;; [command]
+                     (reset! args-stack []))
                    (exitCommand_invocation [ctx]
-                     (conj! invocations (persistent! @args)))
+                     (reset! invocations (conj @invocations @args)))
                    (exitSingle_argument [ctx]
-                     (conj! @args (-> ctx (.getText))))
+                     (reset! args (conj @args (-> ctx (.getText)))))
                    (enterCompound_argument [ctx]
-                     (conj! @args-stack @args)
-                     (reset! args (transient [])))
+                     (reset! args-stack (conj @args-stack @args))
+                     (reset! args []))
                    (exitCompound_argument [ctx]
-                     (let [tmp (persistent! @args)]
-                       (reset! args (nth @args-stack (- (count @args-stack) 1)))
-                       (pop! @args-stack)
-                       (conj! @args tmp))))]
+                     (let [tmp (last @args-stack)]
+                       (reset! args-stack (pop @args-stack))
+                       (reset! args (conj tmp @args)))))]
     (.walk walker analyser tree)
-    (persistent! invocations)))
+    @invocations))
 
 (defn parse-file
   "Parse cmake script file, return a list of command invocation."
