@@ -1,6 +1,7 @@
 (ns cmake-parser.core
   (:require [clojure.string :refer [index-of last-index-of]])
   (:import
+   [java.util Vector Stack]
    [org.antlr.v4.runtime CharStream CharStreams CommonTokenStream]
    [org.antlr.v4.runtime.tree ParseTreeWalker]
    [cmake_parser CMakeLexer CMakeParser CMakeBaseListener]))
@@ -33,26 +34,28 @@
         parser (CMakeParser. tokens)
         tree (.file parser)
         walker (ParseTreeWalker.)
-        invocations (atom [])
-        args (atom nil) ;; [command arg1 arg2 ...]
-        args-stack (atom nil)
+        invocations (Vector.)
+        stack (Stack.) ;; [command arg1 arg2 ...]
+        top (atom nil)
         analyser (proxy [CMakeBaseListener] []
                    (enterCommand_invocation [ctx]
-                     (reset! args [(-> ctx (.Identifier) (.getText))]) ;; [command]
-                     (reset! args-stack []))
+                     (reset! top (Vector.))
+                     (.add @top (-> ctx (.Identifier) (.getText))) ;; [command]
+                     (.push stack @top))
                    (exitCommand_invocation [ctx]
-                     (reset! invocations (conj @invocations @args)))
+                     (.add invocations (.pop stack)))
                    (exitSingle_argument [ctx]
-                     (reset! args (conj @args (-> ctx (.getText)))))
+                     (.add @top (-> ctx (.getText))))
                    (enterCompound_argument [ctx]
-                     (reset! args-stack (conj @args-stack @args))
-                     (reset! args []))
+                     (let [tmp (Vector.)]
+                       (.add @top tmp)
+                       (reset! top tmp)
+                       (.push stack @top)))
                    (exitCompound_argument [ctx]
-                     (let [tmp (last @args-stack)]
-                       (reset! args-stack (pop @args-stack))
-                       (reset! args (conj tmp @args)))))]
+                     (.pop stack)
+                     (reset! top (.peek stack))))]
     (.walk walker analyser tree)
-    @invocations))
+    invocations))
 
 (defn parse-file
   "Parse cmake script file, return a list of command invocation."

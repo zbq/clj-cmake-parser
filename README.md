@@ -27,9 +27,9 @@ This is a project to parse cmake scripts, it will parse script into a list of co
       (println (clojure.string/join " " invocation))
       (cond
         (.equalsIgnoreCase "SET" (first invocation))
-        (reset! bindings (assoc @bindings (second invocation) (nth invocation 2))
+        (reset! bindings (assoc @bindings (second invocation) (nth invocation 2)))
         (.equalsIgnoreCase "ADD_EXECUTABLE" (first invocation))
-        (println "bin:" (expand-argument (second invocation) bindings)))))))
+        (println "bin:" (expand-argument (second invocation) @bindings))))))
 ```
 This will output: 
 

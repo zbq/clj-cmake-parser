@@ -12,9 +12,12 @@
       (println (clojure.string/join " " invocation))
       (cond
         (.equalsIgnoreCase "SET" (first invocation))
-        (reset! bindings (assoc @bindings (second invocation) (nth invocation 2))
+        (reset! bindings (assoc @bindings (second invocation) (nth invocation 2)))
         (.equalsIgnoreCase "ADD_EXECUTABLE" (first invocation))
-        (println "bin:" (expand-argument (second invocation) bindings)))))))
+        (println "bin:" (expand-argument (second invocation) @bindings))))))
+
+(deftest test-common-usage
+  (common-usage))
 
 (deftest test-crlf
   (let [script "add(1 2)\r\nsub(2 3) #hello"
@@ -32,9 +35,7 @@ if(FALSE AND (FALSE OR (HELLO WORLD) TRUE)) # evaluates to FALSE
         invocs (parse-string script)
         invoc (first invocs)]
     (is (= (count invoc) 4))
-    (is (= (count (nth invoc 3)) 4))
-    (is (= "if FALSE AND FALSE OR HELLO WORLD TRUE"
-           (clojure.string/join " " (flatten invoc))))))
+    (is (= (count (nth invoc 3)) 4))))
 
 (deftest test-bracket-comment
   (let [script "
