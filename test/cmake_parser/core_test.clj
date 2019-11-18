@@ -35,7 +35,9 @@ if(FALSE AND (FALSE OR (HELLO WORLD) TRUE)) # evaluates to FALSE
         invocs (parse-string script)
         invoc (first invocs)]
     (is (= (count invoc) 4))
-    (is (= (count (nth invoc 3)) 4))))
+    (is (= (count (nth invoc 3)) 4))
+    (is (= "if FALSE AND FALSE OR HELLO WORLD TRUE"
+           (clojure.string/join " " (flatten invoc))))))
 
 (deftest test-bracket-comment
   (let [script "

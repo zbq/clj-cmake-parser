@@ -36,26 +36,25 @@
         walker (ParseTreeWalker.)
         invocations (Vector.)
         stack (Stack.) ;; [command arg1 arg2 ...]
-        top (atom nil)
         analyser (proxy [CMakeBaseListener] []
                    (enterCommand_invocation [ctx]
-                     (reset! top (Vector.))
-                     (.add @top (-> ctx (.Identifier) (.getText))) ;; [command]
-                     (.push stack @top))
+                     (let [top (Vector.)]
+                       (.add top (-> ctx (.Identifier) (.getText))) ;; [command]
+                       (.push stack top)))
                    (exitCommand_invocation [ctx]
-                     (.add invocations (.pop stack)))
+                     (.add invocations (vec (.pop stack))))
                    (exitSingle_argument [ctx]
-                     (.add @top (-> ctx (.getText))))
+                     (let [top (.peek stack)]
+                       (.add top (-> ctx (.getText)))))
                    (enterCompound_argument [ctx]
-                     (let [tmp (Vector.)]
-                       (.add @top tmp)
-                       (reset! top tmp)
-                       (.push stack @top)))
+                     (let [top (Vector.)]
+                       (.push stack top)))
                    (exitCompound_argument [ctx]
-                     (.pop stack)
-                     (reset! top (.peek stack))))]
+                     (let [arg (vec (.pop stack))
+                           top (.peek stack)]
+                       (.add top arg))))]
     (.walk walker analyser tree)
-    invocations))
+    (vec invocations)))
 
 (defn parse-file
   "Parse cmake script file, return a list of command invocation."
